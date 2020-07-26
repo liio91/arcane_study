@@ -1,11 +1,14 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
 
-@app.route('/test')
+@app.route('/', methods=['GET', 'POST'])
 def test():
-    return jsonify("test")
+    if request.method == 'GET':
+        return jsonify("get")
+    elif request.method == 'POST':
+        return jsonify("post")
 
 
 if __name__ == '__main__':
