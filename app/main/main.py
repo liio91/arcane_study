@@ -1,3 +1,5 @@
+
+
 from flask import Flask, request
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
@@ -40,6 +42,15 @@ class User(db.Model):
     firstName = db.Column(db.String(50))
     lastName = db.Column(db.String(50))
     birthday = db.Column(db.Date())
+
+
+class UserSchema(ma.Schema):
+    class Meta:
+        fields = ("id", "firstName", "lastName", "birthday")
+
+
+user_schema = UserSchema()
+users_schema = UserSchema(many=True)
 
 
 class PropertyListResource(Resource):
@@ -96,8 +107,61 @@ class PropertyResource(Resource):
         return property_schema.dump(property)
 
 
+class UserListResource(Resource):
+    def get(self):
+        users = User.query.all()
+        return users_schema.dump(users)
+
+    def post(self):
+        if 'firstName' not in request.json or \
+                'lastName' not in request.json or \
+                'birthday' not in request.json:
+            return None, 400
+
+        try:
+            from datetime import datetime
+            date = datetime.strptime(request.json['birthday'], '%Y-%m-%d').date()
+        except Exception as e:
+            return None, 400
+
+        new_user = User(
+            firstName=request.json['firstName'],
+            lastName=request.json['lastName'],
+            birthday=date
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        return user_schema.dump(new_user), 201
+
+
+class UserResource(Resource):
+    def get(self, user_id):
+        user = User.query.get_or_404(user_id)
+        return user_schema.dump(user)
+
+    def patch(self, user_id):
+        user = User.query.get_or_404(user_id)
+
+        if 'firstName' in request.json:
+            user.firstName = request.json['firstName']
+        if 'lastName' in request.json:
+            user.description = request.json['lastName']
+        if 'birthday' in request.json:
+            try:
+                from datetime import datetime
+                user.birthday = datetime.strptime(request.json['birthday'], '%Y-%m-%d').date()
+            except Exception as e:
+                return None, 400
+
+        db.session.commit()
+        return user_schema.dump(user)
+
+
 api.add_resource(PropertyListResource, '/properties')
 api.add_resource(PropertyResource, '/property/<int:property_id>')
+api.add_resource(UserListResource, '/users')
+api.add_resource(UserResource, '/user/<int:user_id>')
+
 
 if __name__ == '__main__':
     application.run(debug=True)
