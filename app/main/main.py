@@ -57,8 +57,6 @@ users_schema = UserSchema(many=True)
 
 class PropertyListResource(Resource):
     def get(self):
-        args = request.args
-        print(args)
         if 'city_id' in request.args:
             properties = Property.query.filter_by(city_id=request.args['city_id'])
         else:
