@@ -22,7 +22,8 @@ class Property(db.Model):
     city_id = db.Column(db.Integer())
     room = db.Column(db.Integer)
     characteristic = db.Column(db.String())
-    owner_id = db.Column(db.Integer())
+    owner_id = db.Column(db.Integer(), db.ForeignKey('user.id'), nullable=False)
+    # owner_id = db.Column(db.Integer())
 
     def __repr__(self):
         return '<Property %s>' % self.title
@@ -42,6 +43,7 @@ class User(db.Model):
     firstName = db.Column(db.String(50))
     lastName = db.Column(db.String(50))
     birthday = db.Column(db.Date())
+    properties = db.relationship('Property', backref='user', lazy=True)
 
 
 class UserSchema(ma.Schema):
@@ -55,7 +57,12 @@ users_schema = UserSchema(many=True)
 
 class PropertyListResource(Resource):
     def get(self):
-        properties = Property.query.all()
+        args = request.args
+        print(args)
+        if 'city_id' in request.args:
+            properties = Property.query.filter_by(city_id=request.args['city_id'])
+        else:
+            properties = Property.query.all()
         return properties_schema.dump(properties)
 
     def post(self):
